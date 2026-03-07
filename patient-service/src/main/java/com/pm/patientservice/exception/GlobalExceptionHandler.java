@@ -1,7 +1,9 @@
 package com.pm.patientservice.exception;
 
+import io.grpc.StatusRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -35,5 +37,14 @@ public class GlobalExceptionHandler {
         Map<String, String> errors = new HashMap<>();
         errors.put("Message", "Patient not found!");
         return ResponseEntity.badRequest().body(errors);
+    }
+
+    @ExceptionHandler(StatusRuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleGrpcStatusRuntimeException(StatusRuntimeException ex) {
+        log.error("gRPC service call failed: {}", ex.getMessage());
+        Map<String, String> errors = new HashMap<>();
+        errors.put("Message", "A downstream service is currently unavailable. Please try again later.");
+        errors.put("gRPCStatus", ex.getStatus().getCode().name());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errors);
     }
 }

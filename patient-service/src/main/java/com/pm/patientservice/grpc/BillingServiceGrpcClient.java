@@ -18,8 +18,8 @@ public class BillingServiceGrpcClient {
     // localhost:9001/BillingService/CreatePatientAccount
     // aws.grpc:123123/BillingService/CreatePatientAccount
     public BillingServiceGrpcClient(
-            @Value("${billing.service.address.localhost}") String serverAddress,
-            @Value("${billing.service.port:9001}") int serverPort
+            @Value("${billing.service.address}") String serverAddress,
+            @Value("${billing.service.grpc.port:9001}") int serverPort
     ) {
         log.info("Connecting to Billing Service GRPC service at {}:{}", serverAddress, serverPort);
         ManagedChannel channel= ManagedChannelBuilder.forAddress(serverAddress, serverPort)
@@ -33,8 +33,13 @@ public class BillingServiceGrpcClient {
                 .setName(name)
                 .setEmail(email)
                 .build();
-        BillingResponse response=blockingStub.createBillingAccount(request);
-        log.info("Received response from Billing Service GRPC service: accountId={}, status={}", response.getAccountId(), response.getStatus());
-        return response;
+        try {
+            BillingResponse response=blockingStub.createBillingAccount(request);
+            log.info("Received response from Billing Service GRPC service: accountId={}, status={}", response.getAccountId(), response.getStatus());
+            return response;
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("Failed to call Billing Service gRPC: status={}, message={}", e.getStatus().getCode(), e.getMessage());
+            throw e;
+        }
     }
 }
